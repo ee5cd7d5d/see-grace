@@ -16,6 +16,33 @@ def find_header(counter, width):
             return width * (counter + 1), counter
     return -1, -1
 
+def read_pack(name_dfr):
+    '''To read the input info from the Data Format Record'''
+    with open("infos.txt", "r", encoding="UTF-8") as info_read:
+        raw_file = info_read.readlines()
+        read_data = []
+        for line in raw_file:
+            read_data.append(line.strip())  # transform the .txt into a str list w/o '\n'
+        in_pos = read_data.index(name_dfr)  # reference name input  of the Data Format Record group
+        fin_pos = read_data.index("exit"+name_dfr)  # reference to exit the DFR group
+        group_data = []
+        for counter in range(in_pos+1,fin_pos): # to get whole designated DFR pack info from .txt
+            group_data.append(read_data[counter])
+        ref = [0,0,0]
+        ref[0] = group_data.index("type") # ref. mark for type list in .txt
+        ref[1] = group_data.index("bytepack") # mark for byte packs list in .txt
+        ref[2] = group_data.index("varnam") # mark for variable name list in .txt
+        types = []
+        byte_con = []
+        names = []
+        for counter in range(ref[0] + 1, ref[1]):  # to get type of data list
+            types.append(group_data[counter])
+        for counter in range(ref[1] + 1, ref[2]):  # to get byte group length list
+            byte_con.append(group_data[counter])
+        for counter in range(ref[2] + 1, len(group_data)):  # to get var. names list
+            names.append(group_data[counter])
+        byte_int = [int(x) for x in byte_con]
+        return types, byte_int, names   #output in str lists
 
 logging.basicConfig(filename='example.log', encoding='utf-8',filemode='w', level=logging.DEBUG)
 with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
@@ -34,11 +61,9 @@ with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
         logging.error("End of header not found")
 
     # To read the information to legible format
+    typeInfo, bytePack, varNames = read_pack("GNV1B")
+    logging.info(typeInfo, bytePack, varNames)
     logging.info("Initial position, %s",IN_POS)
-    typeInfo = ["int", "chr", "chr", "dp", "dp", "dp", "dp",     # Type of info to decode
-            "dp", "dp", "dp", "dp", "dp", "dp", "dp", "dp",
-            "uchar"]
-    bytePack = [4, 1, 1, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 1]  # Order of byte groups to decode
     packTotal = sum(bytePack)  #Total length of pack. in bytes
     logging.info("The length of a pack. is %s",packTotal)
     PACK_LENGTH = len(bytePack)
@@ -47,7 +72,6 @@ with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
         logging.info('There is an information type for each set of bytes')
     else:
         logging.warning('There are leftover packs of data without a type of information')
-    decodPack = []
     # To check if there are leftover bytes
     leftoverBytes = (len(lines)- IN_POS)%packTotal
     logging.warning('There are %s leftover bytes',leftoverBytes)
@@ -55,6 +79,7 @@ with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
         IN_POS += leftoverBytes     # So the initial position is adequate to finish in a block
     logging.warning('The initial position has been switched to %s', IN_POS)
     # To interpret the information
+    decodPack = []
     while IN_POS < len(lines):  # Iterate through the read file
         IC = 0
         for byte in bytePack:   # Iterate through one data pack
