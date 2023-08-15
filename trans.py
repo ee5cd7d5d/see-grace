@@ -93,4 +93,3 @@ with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
             IN_POS += byte
             IC += 1
     print(decodPack[0:160])
-
