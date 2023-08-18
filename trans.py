@@ -3,7 +3,7 @@ import struct
 import logging
 
 def read_file():
-    '''To read the filename and the number of files that have to be interpreted'''
+    '''To read the filename and the number of files that have to be interpreted from infos.txt'''
     with open("infos.txt", "r", encoding="UTF-8") as info_read:
         raw_file = info_read.readlines()
         read_data = []
@@ -46,22 +46,20 @@ def read_pack(name_dfr):
             read_data.append(line.strip())  # transform the .txt into a str list w/o '\n'
         for _x, dat_names in enumerate(name_dfr): #iter. through each filename
             byte_con = []
-            simple_dat_name = dat_names.split('_',1) [0]
-            print(simple_dat_name)
-            in_pos = read_data.index(simple_dat_name) # reference to enter DFR group
-            fin_pos = read_data.index("exit"+simple_dat_name)  # reference to exit DFR group
             group_data = []
-            for counter in range(in_pos+1,fin_pos): # to get designated DFR pack info from .txt
+            ref = [0,0,0,0,0]
+            ref[0] = read_data.index(dat_names.split('_',1)[0]) # reference to enter DFR group
+            ref[1] = read_data.index("exit"+dat_names.split('_',1)[0])  # exit DFR reference
+            for counter in range(ref[0]+1,ref[1]): # to get designated DFR pack info from .txt
                 group_data.append(read_data[counter])
-            ref = [0,0,0]
-            ref[0] = group_data.index("type") # ref. mark for type list in .txt
-            ref[1] = group_data.index("bytepack") # mark for byte packs list in .txt
-            ref[2] = group_data.index("varnam") # mark for variable name list in .txt
-            for counter in range(ref[0] + 1, ref[1]):  # to get type of data list
+            ref[2] = group_data.index("type") # ref. mark for type list in .txt
+            ref[3] = group_data.index("bytepack") # mark for byte packs list in .txt
+            ref[4] = group_data.index("varnam") # mark for variable name list in .txt
+            for counter in range(ref[2] + 1, ref[3]):  # to get type of data list
                 types[_x].append(group_data[counter])
-            for counter in range(ref[1] + 1, ref[2]):  # to get byte group length list
+            for counter in range(ref[3] + 1, ref[4]):  # to get byte group length list
                 byte_con.append(group_data[counter])
-            for counter in range(ref[2] + 1, len(group_data)):  # to get var. names list
+            for counter in range(ref[4] + 1, len(group_data)):  # to get var. names list
                 names[_x].append(group_data[counter])
             byte_int[_x] = [int(x) for x in byte_con]
     return types, byte_int, names   #output in str lists
@@ -118,4 +116,4 @@ for _n in range(numFiles): # to iterate through each set of data
                     decodPack.append((lines[IN_POS:(IN_POS+byte)].decode("ascii")))
                 IN_POS += byte
                 IC += 1
-print(decodPack[1][0:160])
+print(decodPack[0][0:160],decodPack[1][0:160])
