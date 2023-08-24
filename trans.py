@@ -1,9 +1,11 @@
 """Transform NASA data into binary"""
 import struct
 import logging
+import matplotlib.pyplot as plt
 
-def read_file():
-    '''To read the filename and the number of files that have to be interpreted from infos.txt'''
+def read_howmany_names():
+    '''To read the filename and the number of DFR files that have
+    to be interpreted from infos.txt'''
     with open("infos.txt", "r", encoding="UTF-8") as info_read:
         raw_file = info_read.readlines()
         read_data = []
@@ -34,7 +36,7 @@ def find_header(counter, width):
             return width * (counter + 1), counter
     return -1, -1
 
-def read_pack(name_dfr):
+def read_dfr(name_dfr):
     '''To read the input info from the Data Format Record (DFR)'''
     with open("infos.txt", "r", encoding="UTF-8") as info_read:
         raw_file = info_read.readlines()
@@ -64,9 +66,28 @@ def read_pack(name_dfr):
             byte_int[_x] = [int(x) for x in byte_con]
     return types, byte_int, names   #output in str lists
 
+def list_for_plotting(decod,namevar,varstring):
+    '''Getting a list with a specific DFR variable values'''
+    pos=varstring.index(namevar)
+    var_of_interest = []
+    _s = pos
+    while _s < len(decod):
+        var_of_interest.append(decod[_s])
+        _s += len(varstring) - 1
+    return var_of_interest
+
+
+class InvalidReturnStatement(Exception):
+    '''Class to check header performance'''
+    def __init__(self):
+        super().__init__('End of header not found')
+
+
+
+
 logging.basicConfig(filename='example.log', encoding='utf-8',filemode='w', level=logging.DEBUG)
-fileNames, numFiles = read_file()
-typeInfo, bytePack, varNames = read_pack(fileNames) # getting the information to know what to read
+fileNames, numFiles = read_howmany_names()
+typeInfo, bytePack, varNames = read_dfr(fileNames) # getting the information to know what to read
 decodPack = [[]  for x in range(numFiles)] # empty list of lists to store results
 print(fileNames)
 for _n in range(numFiles): # to iterate through each set of data
@@ -82,8 +103,8 @@ for _n in range(numFiles): # to iterate through each set of data
         IN_POS, LINE_COUNT = find_header(LINE_COUNT, header_width)
         logging.info("Position of last line, %s", LINE_COUNT)
         logging.info("%s bytes in header",IN_POS)
-        if IN_POS == -1 or LINE_COUNT == -1:
-            logging.error("End of header not found")
+        # if IN_POS or LINE_COUNT == -1:
+        #     raise InvalidReturnStatement
         # -----------------------------------------
         # To read the information to legible format
         logging.info(typeInfo, bytePack, varNames)
@@ -116,4 +137,17 @@ for _n in range(numFiles): # to iterate through each set of data
                     decodPack.append((lines[IN_POS:(IN_POS+byte)].decode("ascii")))
                 IN_POS += byte
                 IC += 1
-print(decodPack[0][0:160],decodPack[1][0:160])
+#print(decodPack[0][0:160],decodPack[1][0:160])
+#
+#To plot some info
+
+gps_time = list_for_plotting(decodPack[0], 'gps_time', varNames[0])
+xpos = list_for_plotting(decodPack[0], 'xpos', varNames[0])
+ypos = list_for_plotting(decodPack[0], 'ypos', varNames[0])
+zpos = list_for_plotting(decodPack[0], 'zpos', varNames[0])
+fig, axs = plt.subplots(3)
+fig.suptitle("Positions of the satellite")
+axs[0].plot(gps_time,xpos)
+axs[1].plot(gps_time,ypos)
+axs[2].plot(gps_time,zpos)
+plt.show()
