@@ -3,9 +3,6 @@ import struct
 import logging
 
 
-
-
-
 def find_header(counter, width):
     """To get the position of END OF HEADER"""
     header_line = lines[0:width].decode("ascii")
