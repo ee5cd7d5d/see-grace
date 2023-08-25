@@ -9,7 +9,7 @@ rules:
 
     # will be ignored only by this rule
     ignore:
-      - README.md
+      - "*.json"
 
     # if true also checks if file ends in a single newline character
     single-new-line: true
