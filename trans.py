@@ -3,7 +3,7 @@ import struct
 import logging
 
 
-def find_header(counter, width):
+def find_header(lines, counter, width):
     """To get the position of END OF HEADER"""
     header_line = lines[0:width].decode("ascii")
     for i in range(0, len(lines)):
@@ -51,59 +51,75 @@ def read_pack(name_dfr):
         return types, byte_int, names  # output in str lists
 
 
+NEWLINE_CHAR = 0x0A  # from HEX reader for the file GNV
+
+
+def get_header_width(binary_data: bytearray) -> int:
+    header_width = binary_data.find(NEWLINE_CHAR)
+    return header_width
+
+
 logging.basicConfig(
     filename="example.log", encoding="utf-8", filemode="w", level=logging.DEBUG
 )
-with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
-    # To ascertain the position of the header
-    lines = input_file.read()
-    NEWLINE_CHAR = 0x0A  # from HEX reader for the file GNV
-    header_width = lines.find(NEWLINE_CHAR)
-    logging.info("Header width is %s", header_width)
-    LINE_COUNT = 0
-    firstline = lines[0:header_width].decode("ascii")
-    print(firstline)
-    IN_POS, LINE_COUNT = find_header(LINE_COUNT, header_width)
-    logging.info("Position of last line, %s", LINE_COUNT)
-    logging.info("%s bytes in header", IN_POS)
-    if IN_POS == -1 or LINE_COUNT == -1:
-        logging.error("End of header not found")
 
-    # To read the information to legible format
-    typeInfo, bytePack, varNames = read_pack("GNV1B")
-    logging.info(typeInfo, bytePack, varNames)
-    logging.info("Initial position, %s", IN_POS)
-    packTotal = sum(bytePack)  # Total length of pack. in bytes
-    logging.info("The length of a pack. is %s", packTotal)
-    PACK_LENGTH = len(bytePack)
-    # For debugging purposes
-    if len(bytePack) == len(typeInfo):
-        logging.info("There is an information type for each set of bytes")
-    else:
-        logging.warning(
-            "There are leftover packs of data without a type of information"
-        )
-    # To check if there are leftover bytes
-    leftoverBytes = (len(lines) - IN_POS) % packTotal
-    logging.warning("There are %s leftover bytes", leftoverBytes)
-    if leftoverBytes:
-        IN_POS += (
-            leftoverBytes  # So the initial position is adequate to finish in a block
-        )
-    logging.warning("The initial position has been switched to %s", IN_POS)
-    # To interpret the information
-    decodPack = []
-    while IN_POS < len(lines):  # Iterate through the read file
-        IC = 0
-        for byte in bytePack:  # Iterate through one data pack
-            if typeInfo[IC] == "int":
-                decodPack.append(struct.unpack(">I", lines[IN_POS : (IN_POS + byte)]))
-            elif typeInfo[IC] == "chr":
-                decodPack.append((lines[IN_POS : (IN_POS + byte)]).decode("ascii"))
-            elif typeInfo[IC] == "dp":
-                decodPack.append(struct.unpack(">d", lines[IN_POS : (IN_POS + byte)]))
-            elif typeInfo[IC] == "uchar":
-                decodPack.append((lines[IN_POS : (IN_POS + byte)].decode("ascii")))
-            IN_POS += byte
-            IC += 1
-    print(decodPack[0:160])
+
+def main():
+    with open("GNV1B_2002-04-04_A_02.dat", "rb", encoding=None) as input_file:
+        # To ascertain the position of the header
+        lines = input_file.read()
+        header_width = get_header_width(lines)
+        logging.info("Header width is %s", header_width)
+        LINE_COUNT = 0
+        firstline = lines[0:header_width].decode("ascii")
+        print(firstline)
+        IN_POS, LINE_COUNT = find_header(lines, LINE_COUNT, header_width)
+        logging.info("Position of last line, %s", LINE_COUNT)
+        logging.info("%s bytes in header", IN_POS)
+        if IN_POS == -1 or LINE_COUNT == -1:
+            logging.error("End of header not found")
+
+        # To read the information to legible format
+        typeInfo, bytePack, varNames = read_pack("GNV1B")
+        logging.info(typeInfo, bytePack, varNames)
+        logging.info("Initial position, %s", IN_POS)
+        packTotal = sum(bytePack)  # Total length of pack. in bytes
+        logging.info("The length of a pack. is %s", packTotal)
+        PACK_LENGTH = len(bytePack)
+        # For debugging purposes
+        if len(bytePack) == len(typeInfo):
+            logging.info("There is an information type for each set of bytes")
+        else:
+            logging.warning(
+                "There are leftover packs of data without a type of information"
+            )
+        # To check if there are leftover bytes
+        leftoverBytes = (len(lines) - IN_POS) % packTotal
+        logging.warning("There are %s leftover bytes", leftoverBytes)
+        if leftoverBytes:
+            IN_POS += leftoverBytes  # So the initial position is adequate to finish in a block
+        logging.warning("The initial position has been switched to %s", IN_POS)
+        # To interpret the information
+        decodPack = []
+        while IN_POS < len(lines):  # Iterate through the read file
+            IC = 0
+            for byte in bytePack:  # Iterate through one data pack
+                if typeInfo[IC] == "int":
+                    decodPack.append(
+                        struct.unpack(">I", lines[IN_POS : (IN_POS + byte)])
+                    )
+                elif typeInfo[IC] == "chr":
+                    decodPack.append((lines[IN_POS : (IN_POS + byte)]).decode("ascii"))
+                elif typeInfo[IC] == "dp":
+                    decodPack.append(
+                        struct.unpack(">d", lines[IN_POS : (IN_POS + byte)])
+                    )
+                elif typeInfo[IC] == "uchar":
+                    decodPack.append((lines[IN_POS : (IN_POS + byte)].decode("ascii")))
+                IN_POS += byte
+                IC += 1
+        print(decodPack[0:160])
+
+
+if __name__ == "__main__":
+    main()
