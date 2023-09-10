@@ -1,14 +1,22 @@
+"""
+Tests for see-grace
+"""
+
 import unittest
 
 from trans import get_header_width
 
 
 class TransTest(unittest.TestCase):
+    """Unit tests"""
+
     def test_get_header_with_returns_expected_from_single_line_header(self):
+        "Testing with a small file"
         content = bytearray([0x01, 0x0B, 0x12, 0x2, 0x0A])
         self.assertEqual(get_header_width(content), 4)
 
     def test_get_header_with_returns_expected_from_multiple_line_header_with_data(self):
+        "Testing with several lines and some data after the header"
         content = bytearray(
             [0x01, 0x0B, 0x12, 0x2, 0x0A, 0x02, 0xAB, 0x32, 0x24, 0x0A, 0x32, 0x24]
         )
