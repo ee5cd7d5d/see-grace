@@ -23,12 +23,12 @@ def read_howmany_names():
             return name_files, i #returns string list of files and how many of them to read
         return 'No groups to read'
 
-def find_header(counter, width):
-    '''To get the position of END OF HEADER'''
+
+def find_header(lines, counter, width):
+    """To get the position of END OF HEADER"""
     header_line = lines[0:width].decode("ascii")
-    for i in range(0,len(lines)):
-        header_line = lines[(i * width) :
-                            ((i + 1) * width)].decode("ascii")
+    for i in range(0, len(lines)):
+        header_line = lines[(i * width) : ((i + 1) * width)].decode("ascii")
         logging.info(i)
         logging.info(header_line)
         if "END OF HEADER" in header_line:
